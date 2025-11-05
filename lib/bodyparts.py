@@ -32,16 +32,23 @@ class Brain:
     def __init__(self, mth, eas):
         self.mth = mth
         self.eas = eas
+        self._init_class_variables()
+
+    def _init_class_variables(self):
         # Collections
         self._cin_dic = {}
         self._cinid_lis = []
+        self._usrin_str_lis = []
         self._gmp = GameMap()
         # Flags
-        self._nextcin_b = True
+        self.nextcin_b = True
         self._quit = True
         self.usr_response_str = ""
         # ---------
         self.start()
+
+    def _add_user_input(self, usrin_str):
+        self._usrin_str_lis.insert(0, usrin_str)
 
     # Actions
     def quit(self):
@@ -61,7 +68,7 @@ class Brain:
 
         if not placeadded_b:
             raise ValueError(
-                f"bodyparts.Brain: 63 - Unable to add Place. name: {plc.get_name()} id: {plc.get_id()}"
+                f"bodyparts.Brain: 71 - Unable to add Place. name: {plc.get_name()} id: {plc.get_id()}"
             )
 
     def _init_wakeup_cinematic(self):
@@ -109,11 +116,11 @@ class Brain:
 
     def _init_witcot_place(self, mth):
 
-        tyb_itm = init_toybox_item()
+        toybox_itm = init_toybox_item()
         wsw_itm = init_woodsword_item()
 
         itms_lis = []
-        itms_lis.append(tyb_itm)
+        itms_lis.append(toybox_itm)
         itms_lis.append(wsw_itm)
 
         witcab_plc_id_str = "0x20000"
@@ -142,7 +149,7 @@ class Brain:
         self.integrate_place(plc=witcab_plc, gridcoord_i_tup=(0, 0))
 
     def load_actions(self, gmp):
-        self._mva = MoveAction(gbl_gmp=gmp)
+        self.mva = MoveAction(gbl_gmp=gmp)
 
     def _input_controller(self):
         in_str = self.eas.listen(">: ")
@@ -154,8 +161,9 @@ class Brain:
 
             if verb_str == "quit":
                 self.quit()
+                return "Have a good day!"
             else:
-                self.mth.say(self._mva.process_input(verb_str, data_str_li))
+                return self.mva.process_input(verb_str, data_str_li)
 
     # Runner
     def run(self):
@@ -165,18 +173,23 @@ class Brain:
         # Item
 
         # Helper Funcs
-        nextcinauth_n_cininqueue = lambda: self._nextcin_b and self._cinid_lis
+        nextcinauth_n_cininqueue = lambda: self.nextcin_b and self._cinid_lis
         cin_id_in_cin_lis = lambda: self._cinid_lis[0] in self._cinid_lis
-
+        usrout_str = ""
         # Main Loop runs for as long as there are places to go
         while not self._quit:
+
             # Cinematic logic
             if nextcinauth_n_cininqueue():
                 if cin_id_in_cin_lis():
                     cur_cin = self._cin_dic[self._cinid_lis.pop()]
                     while not cur_cin.play(self.mth, self.eas):
                         pass
-                    self._nextcin_b = False
+                    self.nextcin_b = False
 
-            self._input_controller()
             self._gmp.present_current_place()
+            if self._usrin_str_lis:
+                nextusrin_str = self._usrin_str_lis[0]
+                self.mth.say(nextusrin_str)
+            usrout_str = self._input_controller()
+            self._add_user_input(usrout_str)

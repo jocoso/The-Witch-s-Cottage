@@ -121,7 +121,7 @@ class Place:
 
     def add_item_to(self, gridcoord_i_tup, plc):
         if self.is_grid_empty(gridcoord_i_tup):
-            self._grid.occupy(itmkey_i_tup=gridcoord_i_tup, itmval_any=plc)
+            self.grid.occupy(itmkey_i_tup=gridcoord_i_tup, itmval_any=plc)
             return True
         else:
             return False
