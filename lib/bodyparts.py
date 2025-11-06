@@ -1,6 +1,11 @@
 import os
-from lib.logic import GameMap, Cinematic, Place, MoveAction
-from lib.helper import init_woodsword_item, init_toybox_item
+from lib.logic import GameMap, Place, MoveAction
+from lib.helper import (
+    init_woodsword_item,
+    init_toybox_item,
+    init_wakeup_cinematic,
+    init_witcot_place,
+)
 
 
 # Logic
@@ -39,114 +44,44 @@ class Brain:
         self._cin_dic = {}
         self._cinid_lis = []
         self._usrin_str_lis = []
-        self._gmp = GameMap()
+        self.gmp = GameMap()
         # Flags
         self.nextcin_b = True
-        self._quit = True
+        self.quit = True
         self.usr_response_str = ""
         # ---------
-        self.start()
+        self._start()
 
     def _add_user_input(self, usrin_str):
         self._usrin_str_lis.insert(0, usrin_str)
 
     # Actions
-    def quit(self):
-        self._quit = True
+    def _quit(self):
+        self.quit = True
 
-    def start(self):
-        self._quit = False
+    def _start(self):
+        self.quit = False
 
     # Integrators
-    def integrate_cinematic(self, cin):
+    def _integrate_cinematic(self, cin):
         self._cinid_lis.append(cin.get_id())
         self._cin_dic[cin.get_id()] = cin
 
-    def integrate_place(self, plc, gridcoord_i_tup):
-        placeadded_b = self._gmp.add_place(plc, gridcoord_i_tup)
-        self._gmp.add_pointer(plc)
+    def _integrate_place(self, plc, gridcoord_i_tup):
+        placeadded_b = self.gmp.add_place(plc, gridcoord_i_tup)
+        self.gmp.add_pointer(plc)
 
         if not placeadded_b:
             raise ValueError(
                 f"bodyparts.Brain: 71 - Unable to add Place. name: {plc.get_name()} id: {plc.get_id()}"
             )
 
-    def _init_wakeup_cinematic(self):
-        wakeupid_str = "0x10000"
-        wakeupname_str = "wakeup_cinematic"
-        wakeupcandy_str = "First Cinematic."
-        wakeup_id_action = """
-        You wake up in a strange place. Your mouth is dry, your head is throbing,
-        and your mouth is full with the metallic taste of blood.
-    
-        "Ah! You are awake."
-
-        A weak, creakly voice utters beyond your eyes reach.
-        "You are almost ready love, don't spoil the surprise!"
-        A figure appears to your right, a smiling shadow. 
-        Her index finger playfully lays
-        at the tip of your nose and you feel the burning sensation of a cold touch. 
-        Her eyes are completely white. You are staring at two moons, and they stare
-        right back at your.
-
-        "Go to sleep sweetheart. You will feel better tomorrow, I promise."
-
-        You feel your eyes closing. You try to resist it, but it's futile.
-        The need to rest takes ahold...
-
-        ...
-
-        You can't tell how long it took you to regain consiensness.
-        When you eyes open once more you indeed feel better but also...
-        the shadow is gone...
-
-        You are alone.
-        Input 'c' to continue...
-        """
-
-        wakeupleavcond_b = lambda a: a == "c"
-
-        return Cinematic(
-            id_str=wakeupid_str,
-            name_str=wakeupname_str,
-            candy_str=wakeupcandy_str,
-            cinematic_str=wakeup_id_action,
-            leavcond_fn=wakeupleavcond_b,
-        )
-
-    def _init_witcot_place(self, mth):
-
-        toybox_itm = init_toybox_item()
-        wsw_itm = init_woodsword_item()
-
-        itms_lis = []
-        itms_lis.append(toybox_itm)
-        itms_lis.append(wsw_itm)
-
-        witcab_plc_id_str = "0x20000"
-        witcab_plc_name_str = "Witch's Cottage"
-        witcab_plc_desc_str = """
-        A small cozy environ.
-        Light rushes in from every window, drawing circles on the cottage's
-        stone floor.
-        The walls are wooden, green vines slithering on their surface like snakes."""
-
-        return Place(
-            plc_id=witcab_plc_id_str,
-            plcname_str=witcab_plc_name_str,
-            plcdesc_str=witcab_plc_desc_str,
-            itms_lis=itms_lis,
-            mth=mth,
-            width_i=10,
-            height_i=10,
-        )
-
     def load_places_and_cinematics(self, mth):
         # Places & Cinematics
-        wakeup_cin = self._init_wakeup_cinematic()
-        witcab_plc = self._init_witcot_place(mth)
-        self.integrate_cinematic(wakeup_cin)
-        self.integrate_place(plc=witcab_plc, gridcoord_i_tup=(0, 0))
+        wakeup_cin = init_wakeup_cinematic()
+        witcab_plc = init_witcot_place(mth)
+        self._integrate_cinematic(wakeup_cin)
+        self._integrate_place(plc=witcab_plc, gridcoord_i_tup=(0, 0))
 
     def load_actions(self, gmp):
         self.mva = MoveAction(gbl_gmp=gmp)
@@ -160,8 +95,7 @@ class Brain:
             data_str_li = usrin_str[1:]
 
             if verb_str == "quit":
-                self.quit()
-                return "Have a good day!"
+                self._quit()
             else:
                 return self.mva.process_input(verb_str, data_str_li)
 
@@ -169,7 +103,7 @@ class Brain:
     def run(self):
         # Init
         self.load_places_and_cinematics(self.mth)
-        self.load_actions(self._gmp)
+        self.load_actions(self.gmp)
         # Item
 
         # Helper Funcs
@@ -177,7 +111,7 @@ class Brain:
         cin_id_in_cin_lis = lambda: self._cinid_lis[0] in self._cinid_lis
         usrout_str = ""
         # Main Loop runs for as long as there are places to go
-        while not self._quit:
+        while not self.quit:
 
             # Cinematic logic
             if nextcinauth_n_cininqueue():
@@ -187,7 +121,7 @@ class Brain:
                         pass
                     self.nextcin_b = False
 
-            self._gmp.present_current_place()
+            self.gmp.present_current_place()
             if self._usrin_str_lis:
                 nextusrin_str = self._usrin_str_lis[0]
                 self.mth.say(nextusrin_str)

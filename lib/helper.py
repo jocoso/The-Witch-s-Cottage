@@ -45,9 +45,17 @@ class SlottedPlanarGrid:
         spgsize_i = width_i * height_i
         self.occupied_b_li = [False] * spgsize_i
 
+    def _is_tuple(self, i_tup):
+        return type(i_tup) is tuple
+
     def grid_slot_is_available(self, slotidx_i_tuple):
         if not slotidx_i_tuple:
             return True
+
+        if not self._is_tuple(i_tup=slotidx_i_tuple):
+            raise TypeError(
+                f"helper.SlottedPlanarGrid: 56 - Tuple expected type: {type(slotidx_i_tuple)} given."
+            )
 
         # idx is a tuple. (0, 0)
         tpgidxx_i = slotidx_i_tuple[0]
@@ -73,6 +81,81 @@ class SlottedPlanarGrid:
 # Import Item system in progress
 
 
+def init_witcot_place(mth):
+    from lib.logic import Place
+
+    toybox_itm = init_toybox_item()
+    wsw_itm = init_woodsword_item()
+
+    witcab_itup_itm_dic = {}
+    witcab_itup_itm_dic[(5, 0)] = toybox_itm
+    witcab_itup_itm_dic[(4, 0)] = wsw_itm
+
+    witcab_plc_id_str = "0x20000"
+    witcab_plc_name_str = "Witch's Cottage"
+    witcab_plc_desc_str = """
+    A small cozy environ.
+    Light rushes in from every window, drawing circles on the cottage's
+    stone floor.
+    The walls are wooden, green vines slithering on their surface like snakes."""
+
+    return Place(
+        plc_id=witcab_plc_id_str,
+        plcname_str=witcab_plc_name_str,
+        plcdesc_str=witcab_plc_desc_str,
+        itup_itm_dic=witcab_itup_itm_dic,
+        mth=mth,
+        width_i=5,
+        height_i=5,
+    )
+
+
+def init_wakeup_cinematic():
+    from lib.logic import Cinematic
+
+    wakeup_id = "0x10000"
+    wakeupname_str = "wakeup_cinematic"
+    wakeupcandy_str = "First Cinematic."
+    wakeup_id_action = """
+        You wake up in a strange place. Your mouth is dry, your head is throbing,
+        and your mouth is full with the metallic taste of blood.
+    
+        "Ah! You are awake."
+
+        A weak, creakly voice utters beyond your eyes reach.
+        "You are almost ready love, don't spoil the surprise!"
+        A figure appears to your right, a smiling shadow. 
+        Her index finger playfully lays
+        at the tip of your nose and you feel the burning sensation of a cold touch. 
+        Her eyes are completely white. You are staring at two moons, and they stare
+        right back at your.
+
+        "Go to sleep sweetheart. You will feel better tomorrow, I promise."
+
+        You feel your eyes closing. You try to resist it, but it's futile.
+        The need to rest takes ahold...
+
+        ...
+
+        You can't tell how long it took you to regain consiensness.
+        When you eyes open once more you indeed feel better but also...
+        the shadow is gone...
+
+        You are alone.
+        Input 'c' to continue...
+        """
+
+    wakeupleavcond_b = lambda a: a == "c"
+
+    return Cinematic(
+        cin_id=wakeup_id,
+        name_str=wakeupname_str,
+        candy_str=wakeupcandy_str,
+        cinaction_str=wakeup_id_action,
+        leavcond_fn=wakeupleavcond_b,
+    )
+
+
 def init_toybox_item():
     from lib.logic import Item
 
@@ -82,7 +165,7 @@ def init_toybox_item():
     The toybox looks old and weary. 
     However... Surprisingly sturdy as well."""
 
-    return Item(id_str=tybid_str, name_str=tybname_str, candy_str=tybdesc_str)
+    return Item(itm_id=tybid_str, name_str=tybname_str, candy_str=tybdesc_str)
 
 
 def init_woodsword_item():
@@ -93,7 +176,7 @@ def init_woodsword_item():
     tybdesc_str = """
     Looks sturdy, smells rotten."""
 
-    return Item(id_str=tybid_str, name_str=tybname_str, candy_str=tybdesc_str)
+    return Item(itm_id=tybid_str, name_str=tybname_str, candy_str=tybdesc_str)
 
 
 def is_key_in_dict(id, dict):

@@ -5,19 +5,19 @@ from lib.helper import Styler, SlottedPlanarGrid
 class GameObject:
     # Component classes (bodyparts, Cinematics, Place) don't use this
     # Game-Related classes (GameItem, GameAction) use this
-    def __init__(self, id_str, name_str, candy_str):
-        self._id_str = id_str
-        self._name_str = name_str
-        self._candy_str = candy_str
+    def __init__(self, id, name_str, candy_str):
+        self.id = id
+        self.name_str = name_str
+        self.candy_str = candy_str
 
     def get_id(self):
-        return self._id_str
+        return self.id
 
     def get_name(self):
-        return self._name_str
+        return self.name_str
 
     def get_candy_description(self):
-        return self._candy_str
+        return self.candy_str
 
 
 # mva
@@ -25,12 +25,12 @@ class MoveAction(GameObject):
     def __init__(self, gbl_gmp):
         GameObject.__init__(
             self,
-            id_str="0x40000",
+            id="0x40000",
             name_str="move_forward_action",
             candy_str="Move one grid forward.",
         )
         self.ALL_DIRECTIONS = ["f", "b", "l", "r"]
-        self._gmp = gbl_gmp
+        self.gmp = gbl_gmp
 
     def _is_valid_input(self, in_str):
         return in_str in self.ALL_DIRECTIONS  # True if in_str is 'f', 'b', 'l', or 'r'
@@ -49,8 +49,10 @@ class MoveAction(GameObject):
         if self._is_valid_input(dir_str):
             tocoord_i_tup = self._dir_to_coordinates(dir_str)
 
-            self._gmp.move_in(tocoord_i_tup)
-            return f"You moved {dir_str}."
+            if self.gmp.move_in(tocoord_i_tup):
+                return f"You moved {dir_str}."
+            else:
+                return "You can't move there."
         else:
             return "You rethink your directions. Do you want to `move`, fordward(f), backwards(b), to the left (l), or to the right(r)?"
 
@@ -59,25 +61,26 @@ class MoveAction(GameObject):
             if not data_str_li:
                 return "You rethink your action: Where... Were you moving?"
             else:
-                return self._check_direction(data_str_li[0])
-            # self._gmp = GameMap()
+                if self._check_direction(data_str_li[0]):
+                    dir_i_tup = self._dir_to_coordinates(data_str_li[0])
 
 
 # itm
 class Item(GameObject):
-    def __init__(self, id_str, name_str, candy_str):
-        GameObject.__init__(self, id_str=id_str, name_str=name_str, candy_str=candy_str)
+    def __init__(self, itm_id, name_str, candy_str):
+        GameObject.__init__(self, itm_id, name_str, candy_str)
 
 
 # cin
 class Cinematic(GameObject):
-    def __init__(self, id_str, name_str, candy_str, cinematic_str, leavcond_fn=None):
-        GameObject.__init__(self, id_str, name_str, candy_str)
-        self.cinematic_str = cinematic_str
+    def __init__(self, cin_id, name_str, candy_str, cinaction_str, leavcond_fn=None):
+        GameObject.__init__(self, cin_id, name_str, candy_str)
+        self.cin_id = cin_id
+        self.cination_str = cinaction_str
         self.leavcond_fn = leavcond_fn
 
     def play(self, mth, eas):  # Play cinematic
-        mth.say(self.cinematic_str)
+        mth.say(self.cination_str)
         if self.leavcond_fn:
             usrres_str = eas.listen(">: ")
             return self.leavcond_fn(usrres_str)
@@ -94,23 +97,23 @@ class Place:
         width_i,
         height_i,
         mth,
-        itms_lis=[],
+        itup_itm_dic={},
     ):
         # --
-        self._init_class_variables(plc_id, plcname_str, plcdesc_str, mth, itms_lis)
+        self._init_class_variables(plc_id, plcname_str, plcdesc_str, mth, itup_itm_dic)
 
-    def _init_bodyparts(self, mth):
-        self.plc_stl = Styler(mth)  # Styler's Mouth
-        self.mth = mth
-
-    def _init_class_variables(self, plc_id, plcname_str, plcdesc_str, mth, item_li=[]):
+    def _init_class_variables(
+        self, plc_id, plcname_str, plcdesc_str, mth, itup_itm_dic
+    ):
         # Init
         self.id = plc_id
-        self.grid = SlottedPlanarGrid(5, 5)
+        self.spg = SlottedPlanarGrid(5, 5)
         self.name_str = plcname_str
         self.desc_str = plcdesc_str
-        self._init_bodyparts(mth)
-        self.item_li = item_li
+        self.plc_stl = Styler(mth)  # Styler's Mouth
+        self.mth = mth
+        self.itup_itm_dic = itup_itm_dic
+        self._prepare_items()
 
     # TODO: Use this.
     def _validate_data(self):
@@ -118,6 +121,12 @@ class Place:
         # Logic to validat data goes here
         if not validsize_b:
             raise RuntimeError('f"logic.GameMap: 201 - Under Construction."')
+
+    def _prepare_items(self):
+
+        for key, val in self.itup_itm_dic.items():
+            # self.spg.occupy(key, val)
+            print(f"key: {key}, val: {val}")
 
     def add_item_to(self, gridcoord_i_tup, plc):
         if self.is_grid_empty(gridcoord_i_tup):
@@ -145,8 +154,8 @@ class Place:
                 return True
 
     def unoccupy_grid(self, grid_id):
-        if self.is_valid_grid_id(grid_id=grid_id):
-            if self.is_grid_occupied(grid_id=grid_id):
+        if self.is_valid_grid_id(grid_id):
+            if self.is_grid_occupied(grid_id):
                 self.grid_dgb_id_lis[grid_id] = None
                 self.occupied_b_lis[grid_id] = False
 
@@ -164,13 +173,16 @@ class Place:
 
             raise NameError("Error: Incorrect function selected by the program.")
 
-    def _present_mult_items(self, range_i):
+    def _present_mult_items(self):
         out_str = ""
-        for x in range(range_i):
-            out_str += self.item_li[x].get_name() + ", "
+        keys_i_tup_li = [key for key, val in self.itup_itm_dic.items()]
+        range_i = len(keys_i_tup_li) - 1
 
-        itm = self.item_li[range_i]
-        itmname_str = itm.get_name()
+        for key_i_tup in keys_i_tup_li:
+            out_str += self.itup_itm_dic[key_i_tup].get_name() + ", "
+
+        last_itm = self.itup_itm_dic[keys_i_tup_li[range_i]]
+        itmname_str = last_itm.get_name()
 
         out_str += f"and {itmname_str}."
 
@@ -180,15 +192,15 @@ class Place:
         self.mth.say("    In the room, you can see")
         out_str = "    "
 
-        if self.item_li:
-            lastitm_idx = len(self.item_li)
+        if self.itup_itm_dic:
+            lastitm_idx = len(self.itup_itm_dic)
 
             # Single Item
             if lastitm_idx == 1:
                 out_str += self.present_sing_item()
             # Multiple items
             else:
-                out_str += self._present_mult_items(range_i=(lastitm_idx - 1))
+                out_str += self._present_mult_items()
         else:
             out_str += "nothing."
 
