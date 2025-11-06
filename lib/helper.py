@@ -1,79 +1,97 @@
-# stl
+# STL: A class to apply different styles (hash and dash) to text
 class Styler:
     def __init__(self, mth):
-        self._mth = mth
+        self.mth = mth
+        self.hashedstl_str = "#" * 30
+        self.dashedstl_str = "-" * 30
 
     def hashed_style(self, cont_str):
-        self._mth.say("#" * 30)
-        self._mth.say("# " + cont_str + " #")
-        self._mth.say("#" * 30)
+        self.mth.say(self.hashedstl_str)
+        self.mth.say("# " + cont_str + " #")
+        self.mth.say(self.hashedstl_str)
 
     def dashed_style(self, cont_str):
-        self._mth.say("-" * 30)
-        self._mth.say("- " + cont_str + " -")
-        self._mth.say("-" * 30)
+        self.mth.say(self.dashedstl_str)
+        self.mth.say("- " + cont_str + " -")
+        self.mth.say(self.dashedstl_str)
 
 
-# pgd
+# PGD: A class to manage a basic planar grid (2D grid)
 class PlanarGrid:
     def __init__(self, width_i, height_i):
-        # _init_data(self) - puts (int) data
+        # Initializes the grid with given width and height
         self._init_data(width_i, height_i)
 
     def _init_data(self, width_i, height_i):
+        # Converts width and height to integers and calculates area
         self.width_i = int(width_i)
         self.height_i = int(height_i)
         self.area_i = int(width_i * height_i)
-        self.grid_any_any_dic = {}
+        self.grid_any_any_dic = (
+            {}
+        )  # Initializes an empty dictionary to store grid items
 
+    # Adds a new item to the grid
     def append(self, itmkey_any, itmval_any):
+        # Raises an error if the item key or value is empty
         if not itmkey_any or not itmval_any:
-            raise TypeError(f"helper.PlanarGrid: 31 - Parameters Can Not Be Empty.")
+            raise TypeError(f"helper.PlanarGrid: 33 - Parameters Can Not Be Empty.")
+        # Add the item to the grid dictionary
         self.grid_any_any_dic[itmkey_any] = itmval_any
 
+    # Returns the size of the grid (total area)
     def get_size(self):
         return self.area_i
 
+    # Checks if a particular item exists in the grid
     def has_item(self, itmkey_any):
         return itmkey_any in self.grid_any_any_dic
 
 
-# spg
+# SPG: A class to manage a slotted planar grid, which is essentially a grid with slots
 class SlottedPlanarGrid:
     def __init__(self, width_i, height_i):
+        # Creates a PlanarGrid object and initializes slot occupation list
         self.pgd = PlanarGrid(width_i, height_i)
         spgsize_i = width_i * height_i
+        # Keeps track of occupied slots, initialized to 'False' (not occupied)
         self.occupied_b_li = [False] * spgsize_i
 
+    # Helper method to check if an input is a tuple
     def _is_tuple(self, i_tup):
         return type(i_tup) is tuple
 
+    # Checks if a given slot in the grid is available (unoccupied)
     def grid_slot_is_available(self, slotidx_i_tuple):
+        # If no slot index is provided, assume it's unavailable
         if not slotidx_i_tuple:
-            return True
-
+            return False
+        # Ensures the provided slot index is a tuple
         if not self._is_tuple(i_tup=slotidx_i_tuple):
             raise TypeError(
                 f"helper.SlottedPlanarGrid: 56 - Tuple expected type: {type(slotidx_i_tuple)} given."
             )
 
-        # idx is a tuple. (0, 0)
+        # Unpacks the tuple into coordinates
         tpgidxx_i = slotidx_i_tuple[0]
         tpgidxy_i = slotidx_i_tuple[1]
 
         occidx_i = tpgidxx_i * tpgidxy_i
 
-        #
         isvalididx_b = occidx_i < len(self.occupied_b_li)
 
+        # If index is valid, return the occupation status of the slot
         if isvalididx_b:
             return self.occupied_b_li[occidx_i]
         else:
             return True  # If it doesn't know, it doesn't fuck with it. It is occupied.
 
+    # Occupies a slot with an item if the slot is available
     def occupy(self, itmkey_i_tup, itmval_any):
+        # Check if the slot is available
         if self.grid_slot_is_available(itmkey_i_tup):
             self.occupied_b_li[itmkey_i_tup] = True
+            # Add the item to the grid
             self.pgd.append(itmkey_i_tup, itmval_any)
             print("Plane has been occupied")
 
@@ -179,5 +197,6 @@ def init_woodsword_item():
     return Item(itm_id=tybid_str, name_str=tybname_str, candy_str=tybdesc_str)
 
 
+# Function to check if a key exists in a dictionary
 def is_key_in_dict(id, dict):
     return id in dict
